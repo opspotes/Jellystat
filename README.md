@@ -17,13 +17,12 @@ services:
       POSTGRES_PASSWORD: mypassword
       POSTGRES_IP: jellystat-db
       POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: jfstat
       JWT_SECRET: "my-secret-jwt-key"
     depends_on:
       - jellystat-db
     ports:
       - "3000:3000"
-    volumes:
-      - ./backup-data:/app/backend/backup-data
 
   jellystat-db:
     container_name: jellystat-db
