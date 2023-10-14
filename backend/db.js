@@ -30,11 +30,18 @@ async function initDatabase() {
         password: _POSTGRES_PASSWORD,
         port: _POSTGRES_PORT,
     });
-    await client.connect(); // gets connection
-    await client.query("CREATE DATABASE " + _POSTGRES_DATABASE); // sends queries
+    await client.connect();
+    try {
+        await client.query("CREATE DATABASE " + _POSTGRES_DATABASE); // sends queries
+
+    } catch(e) {
+        console.log('Ignoring database creation, already existing')
+    } finally {
+        await client.end();
+
+    }
 
 
-    await client.end(); // closes connection
 
     pool = new Pool({
         user: _POSTGRES_USER,
