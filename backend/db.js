@@ -32,9 +32,13 @@ async function initDatabase() {
     });
     await client.connect();
     try {
-        await client.query("CREATE DATABASE " + _POSTGRES_DATABASE); // sends queries
+        await client.query("CREATE DATABASE " + _POSTGRES_DATABASE);
     } catch(e) {
-        console.log('Ignoring database creation, already existing', e)
+        if(e.includes('already exists')) {
+            console.log('Ignoring database creation, already existing')
+        } else {
+            throw e;
+        }
     } finally {
         await client.end();
     }
