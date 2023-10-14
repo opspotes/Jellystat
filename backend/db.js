@@ -33,7 +33,7 @@ async function initDatabase() {
   try {
     await client.query("CREATE DATABASE " + _POSTGRES_DATABASE);
   } catch (e) {
-    if (e.includes("already exists")) {
+    if (e.message && e.message.includes("already exists")) {
       console.log("Ignoring database creation, already existing");
     } else {
       throw e;
