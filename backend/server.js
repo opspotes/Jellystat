@@ -38,11 +38,9 @@ async function authenticate(req, res, next) {
   const apiKey = req.headers["x-api-token"] || req.query.apiKey;
 
   if (!token && !apiKey) {
-    return res
-      .status(401)
-      .json({
-        message: "Authentication failed. No token or API key provided.",
-      });
+    return res.status(401).json({
+      message: "Authentication failed. No token or API key provided.",
+    });
   }
 
   if (token) {
@@ -95,5 +93,4 @@ db.initDatabase().then(() => {
     ActivityMonitor.ActivityMonitor(1000);
     SyncTask.SyncTask();
   });
-
-})
+});
