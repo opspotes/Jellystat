@@ -9,6 +9,7 @@ import LibrarySelector from "./library_selector";
 import Logs from "./components/settings/logs";
 
 import "./css/settings/settings.css";
+import Tasks from "./components/settings/Tasks";
 
 export default function Settings() {
   return (
@@ -22,6 +23,7 @@ export default function Settings() {
         >
           <SettingsConfig />
           <SecuritySettings />
+          <Tasks />
         </Tab>
 
         <Tab
