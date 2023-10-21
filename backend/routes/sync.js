@@ -238,7 +238,10 @@ class sync {
 
   async getExistingIDsforTable(tablename) {
     return await db
-      .query(`SELECT "Id" FROM ${tablename}`)
+      .query(
+        `SELECT "Id"
+                    FROM ${tablename}`,
+      )
       .then((res) => res.rows.map((row) => row.Id));
   }
 
@@ -268,6 +271,7 @@ class sync {
     }
   }
 }
+
 ////////////////////////////////////////API Methods
 
 async function syncUserData() {
@@ -319,9 +323,11 @@ async function syncLibraryFolders(data) {
   if (toDeleteIds.length > 0) {
     const ItemsToDelete = await db
       .query(
-        `SELECT "Id" FROM jf_library_items where "ParentId" in (${toDeleteIds
-          .map((id) => `'${id}'`)
-          .join(",")})`,
+        `SELECT "Id"
+                 FROM jf_library_items
+                 where "ParentId" in (${toDeleteIds
+                   .map((id) => `'${id}'`)
+                   .join(",")})`,
       )
       .then((res) => res.rows.map((row) => row.Id));
     if (ItemsToDelete.length > 0) {
@@ -331,6 +337,7 @@ async function syncLibraryFolders(data) {
     await _sync.removeData("jf_libraries", toDeleteIds);
   }
 }
+
 async function syncLibraryItems(data) {
   const _sync = new sync();
   const existingLibraryIds = await _sync.getExistingIDsforTable("jf_libraries"); // get existing library Ids from the db
@@ -389,7 +396,9 @@ async function syncShowItems(data) {
   });
 
   const { rows: shows } = await db.query(
-    `SELECT *	FROM public.jf_library_items where "Type"='Series'`,
+    `SELECT *
+         FROM public.jf_library_items
+         where "Type" = 'Series'`,
   );
 
   let insertSeasonsCount = 0;
@@ -411,18 +420,22 @@ async function syncShowItems(data) {
 
     const existingIdsSeasons = await db
       .query(
-        `SELECT *	FROM public.jf_library_seasons where "SeriesId" = '${show.Id}'`,
+        `SELECT *
+                 FROM public.jf_library_seasons
+                 where "SeriesId" = '${show.Id}'`,
       )
       .then((res) => res.rows.map((row) => row.Id));
     let existingIdsEpisodes = [];
     if (existingIdsSeasons.length > 0) {
       existingIdsEpisodes = await db
         .query(
-          `SELECT * FROM public.jf_library_episodes WHERE "SeasonId" IN (${existingIdsSeasons
-            .filter((seasons) => seasons !== "")
-            .map((seasons) => pgp.as.value(seasons))
-            .map((value) => "'" + value + "'")
-            .join(", ")})`,
+          `SELECT *
+                     FROM public.jf_library_episodes
+                     WHERE "SeasonId" IN (${existingIdsSeasons
+                       .filter((seasons) => seasons !== "")
+                       .map((seasons) => pgp.as.value(seasons))
+                       .map((value) => "'" + value + "'")
+                       .join(", ")})`,
         )
         .then((res) => res.rows.map((row) => row.EpisodeId));
     }
@@ -546,10 +559,13 @@ async function syncItemInfo() {
 
   const _sync = new sync(config[0].JF_HOST, config[0].JF_API_KEY);
   const { rows: Items } = await db.query(
-    `SELECT *	FROM public.jf_library_items where "Type" not in ('Series','Folder')`,
+    `SELECT *
+         FROM public.jf_library_items
+         where "Type" not in ('Series', 'Folder')`,
   );
   const { rows: Episodes } = await db.query(
-    `SELECT *	FROM public.jf_library_episodes`,
+    `SELECT *
+         FROM public.jf_library_episodes`,
   );
 
   let insertItemInfoCount = 0;
@@ -579,7 +595,11 @@ async function syncItemInfo() {
     const data = await _sync.getItemInfo(Item.Id, userid);
 
     const existingItemInfo = await db
-      .query(`SELECT *	FROM public.jf_item_info where "Id" = '${Item.Id}'`)
+      .query(
+        `SELECT *
+                    FROM public.jf_item_info
+                    where "Id" = '${Item.Id}'`,
+      )
       .then((res) => res.rows.map((row) => row.Id));
 
     let ItemInfoToInsert = await data.map((item) =>
@@ -631,7 +651,9 @@ async function syncItemInfo() {
 
     const existingEpisodeItemInfo = await db
       .query(
-        `SELECT *	FROM public.jf_item_info where "Id" = '${Episode.EpisodeId}'`,
+        `SELECT *
+                 FROM public.jf_item_info
+                 where "Id" = '${Episode.EpisodeId}'`,
       )
       .then((res) => res.rows.map((row) => row.Id));
 
@@ -804,7 +826,8 @@ async function syncPlaybackPluginData() {
     .then((res) => res.rows[0]?.MaxRowId);
 
   //Query Builder
-  let query = `SELECT rowid, * FROM PlaybackActivity`;
+  let query = `SELECT rowid, *
+                 FROM PlaybackActivity`;
 
   if (OldestPlaybackActivity) {
     const formattedDateTime = moment(OldestPlaybackActivity).format(
@@ -924,7 +947,7 @@ async function fullSync(triggertype) {
     }
 
     const _sync = new sync(rows[0].JF_HOST, rows[0].JF_API_KEY);
-
+    console.log("Starting fetching libraries");
     const libraries = await _sync.getLibrariesFromApi();
     if (libraries.length === 0) {
       syncTask.loggedData.push({
@@ -933,6 +956,7 @@ async function fullSync(triggertype) {
       logging.updateLog(syncTask.uuid, syncTask.loggedData, taskstate.FAILED);
       return;
     }
+    console.log(`Ended fetching libraries, got [${libraries.length}]`);
 
     const excluded_libraries = rows[0].settings.ExcludedLibraries || [];
 
@@ -942,6 +966,7 @@ async function fullSync(triggertype) {
 
     const data = [];
 
+    console.time("FetchItems");
     //for each item in library run get item using that id as the ParentId (This gets the children of the parent id)
     for (let i = 0; i < filtered_libraries.length; i++) {
       const item = filtered_libraries[i];
@@ -952,6 +977,8 @@ async function fullSync(triggertype) {
       }));
       data.push(...libraryItemsWithParent);
     }
+    console.timeEnd("FetchItems");
+
     const library_items = data.filter((item) =>
       ["Movie", "Audio", "Series"].includes(item.Type),
     );
@@ -959,25 +986,39 @@ async function fullSync(triggertype) {
       ["Season", "Episode"].includes(item.Type),
     );
 
+    console.time("syncUserData");
     //syncUserData
     await syncUserData();
+    console.timeEnd("syncUserData");
 
     //syncLibraryFolders
+    console.time("syncLibraryFolders");
     await syncLibraryFolders(filtered_libraries);
+    console.timeEnd("syncLibraryFolders");
 
     //syncLibraryItems
+    console.time("syncLibraryItems");
     await syncLibraryItems(library_items);
+    console.timeEnd("syncLibraryItems");
 
     //syncShowItems
+    console.time("syncShowItems");
     await syncShowItems(seasons_and_episodes);
+    console.timeEnd("syncShowItem");
 
     //syncItemInfo
+    console.time("syncItemInfo");
     await syncItemInfo();
+    console.timeEnd("syncItemInfo");
 
     //removeOrphanedData
+    console.time("removeOrphanedData");
     await removeOrphanedData();
+    console.timeEnd("removeOrphanedData");
 
+    console.time("updateLibraryStatsData");
     await updateLibraryStatsData();
+    console.timeEnd("updateLibraryStatsData");
 
     logging.updateLog(syncTask.uuid, syncTask.loggedData, taskstate.SUCCESS);
   } catch (error) {
@@ -1002,10 +1043,10 @@ router.get("/beingSync", async (req, res) => {
   const last_execution = await db
     .query(
       `SELECT "Result"
-  FROM public.jf_logging
-  WHERE "Name"='${taskName.sync}'
-  ORDER BY "TimeRun" DESC
-  LIMIT 1`,
+             FROM public.jf_logging
+             WHERE "Name" = '${taskName.sync}'
+             ORDER BY "TimeRun" DESC
+             LIMIT 1`,
     )
     .then((res) => res.rows);
 
