@@ -175,13 +175,13 @@ class sync {
     }
   }
 
-  async getItems(key, id, params) {
+  async getItems(key, id, types) {
+
     try {
-      let url = `${this.hostUrl}/Items?${key}=${id}`;
-      let startIndex = params && params.startIndex ? params.startIndex : 0;
-      let increment = params && params.increment ? params.startIndex : 200;
-      let recursive =
-        params && params.recursive !== undefined ? params.recursive : true;
+      let url = `${this.hostUrl}/Items?${key}=${id}&fields=ParentId&includeItemTypes=${types.join(',')}`;
+      let startIndex = 0;
+      let increment = 200;
+      let recursive = true;
       let total = 200;
 
       let final_response = [];
@@ -200,7 +200,7 @@ class sync {
         total = response.data.TotalRecordCount;
         startIndex += increment;
 
-        final_response = [...final_response, ...response.data.Items];
+        final_response.push(...response.data.Items)
       }
 
       // const results = response.data.Items;
@@ -933,6 +933,20 @@ async function updateLibraryStatsData() {
   });
 }
 
+async function getItemsOfType(filtered_libraries, _sync, types) {
+  const data = [];
+
+  console.time("FetchItems");
+  //for each item in library run get item using that id as the ParentId (This gets the children of the parent id)
+  for (let i = 0; i < filtered_libraries.length; i++) {
+    const library = filtered_libraries[i];
+    let libraryItems = await _sync.getItems("parentId", library.Id, types);
+    data.push(...libraryItems);
+  }
+  console.timeEnd("FetchItems");
+  return data;
+}
+
 async function fullSync(triggertype) {
   const uuid = randomUUID();
   syncTask = { loggedData: [], uuid: uuid };
@@ -964,27 +978,6 @@ async function fullSync(triggertype) {
       (library) => !excluded_libraries.includes(library.Id),
     );
 
-    const data = [];
-
-    console.time("FetchItems");
-    //for each item in library run get item using that id as the ParentId (This gets the children of the parent id)
-    for (let i = 0; i < filtered_libraries.length; i++) {
-      const item = filtered_libraries[i];
-      let libraryItems = await _sync.getItems("parentId", item.Id);
-      const libraryItemsWithParent = libraryItems.map((items) => ({
-        ...items,
-        ...{ ParentId: item.Id },
-      }));
-      data.push(...libraryItemsWithParent);
-    }
-    console.timeEnd("FetchItems");
-
-    const library_items = data.filter((item) =>
-      ["Movie", "Audio", "Series"].includes(item.Type),
-    );
-    const seasons_and_episodes = data.filter((item) =>
-      ["Season", "Episode"].includes(item.Type),
-    );
 
     console.time("syncUserData");
     //syncUserData
@@ -995,16 +988,18 @@ async function fullSync(triggertype) {
     console.time("syncLibraryFolders");
     await syncLibraryFolders(filtered_libraries);
     console.timeEnd("syncLibraryFolders");
+    const library_items = await getItemsOfType(filtered_libraries, _sync, ["Movie", "Audio", "Series"]);
 
     //syncLibraryItems
     console.time("syncLibraryItems");
     await syncLibraryItems(library_items);
     console.timeEnd("syncLibraryItems");
 
+    const seasons_and_episodes = await getItemsOfType(filtered_libraries, _sync, ["Season", "Episode"]);
     //syncShowItems
     console.time("syncShowItems");
     await syncShowItems(seasons_and_episodes);
-    console.timeEnd("syncShowItem");
+    console.timeEnd("syncShowItems");
 
     //syncItemInfo
     console.time("syncItemInfo");
