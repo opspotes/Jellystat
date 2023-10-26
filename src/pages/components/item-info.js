@@ -55,7 +55,7 @@ function ItemInfo() {
         const itemData = await axios.post(
           `/api/getItemDetails`,
           {
-            Id: Id,
+            itemId: Id,
           },
           {
             headers: {

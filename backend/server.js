@@ -52,29 +52,27 @@ async function authenticate(req, res, next) {
     try {
       const decoded = jwt.verify(extracted_token, JWT_SECRET);
       req.user = decoded.user;
-      next();
     } catch (error) {
       console.log(error);
       return res.status(401).json({ message: "Invalid token" });
     }
-  } else {
-    if (apiKey) {
-      const keysjson = await dbInstance
-        .query('SELECT api_keys FROM app_config where "ID"=1')
-        .then((res) => res.rows[0].api_keys);
+    next();
+  } else if (apiKey) {
+    const keysjson = await dbInstance
+      .query('SELECT api_keys FROM app_config where "ID"=1')
+      .then((res) => res.rows[0].api_keys);
 
-      if (!keysjson || Object.keys(keysjson).length === 0) {
-        return res.status(404).json({ message: "No API keys configured" });
-      }
-      const keys = keysjson || [];
+    if (!keysjson || Object.keys(keysjson).length === 0) {
+      return res.status(404).json({ message: "No API keys configured" });
+    }
+    const keys = keysjson || [];
 
-      const keyExists = keys.some((obj) => obj.key === apiKey);
+    const keyExists = keys.some((obj) => obj.key === apiKey);
 
-      if (keyExists) {
-        next();
-      } else {
-        return res.status(403).json({ message: "Invalid API key" });
-      }
+    if (keyExists) {
+      next();
+    } else {
+      return res.status(403).json({ message: "Invalid API key" });
     }
   }
 }

@@ -4,6 +4,8 @@ const axios = require("axios");
 const db = require("../db");
 const https = require("https");
 const { randomUUID } = require("crypto");
+const getJellyfinClient = require("../jellyfin/jellyfin-client");
+const { fetchItem } = require("./sync");
 
 const agent = new https.Agent({
   rejectUnauthorized:
@@ -76,7 +78,7 @@ router.post("/setPreferredAdmin", async (req, res) => {
 
       let query = 'UPDATE app_config SET settings=$1 where "ID"=1';
 
-      const { rows } = await db.query(query, [settings]);
+      await db.query(query, [settings]);
 
       res.send("Settings updated succesfully");
     } else {
@@ -242,13 +244,8 @@ router.get("/keys", async (req, res) => {
     .query('SELECT api_keys FROM app_config where "ID"=1')
     .then((res) => res.rows[0].api_keys);
 
-  if (keysjson) {
-    const keys = keysjson || [];
-    res.send(keys);
-  } else {
-    res.status(404);
-    res.send("Settings not found");
-  }
+  const keys = keysjson || [];
+  res.send(keys);
 });
 
 router.delete("/keys", async (req, res) => {
@@ -485,9 +482,7 @@ router.get("/dataValidator", async (req, res) => {
     });
 
     let libraries = response_data.data.Items;
-    let raw_library_data = response_data.data;
-
-    payload.raw_library_data = raw_library_data;
+    payload.raw_library_data = response_data.data;
 
     //get items
     const show_data = [];
@@ -715,9 +710,12 @@ router.post("/getEpisodes", async (req, res) => {
 
 router.post("/getItemDetails", async (req, res) => {
   try {
-    const { Id } = req.body;
-    let query = `SELECT im."Name" "FileName",im.*,i.* FROM jf_library_items i left join jf_item_info im on i."Id" = im."Id" where i."Id"=$1`;
+    const { itemId: Id } = req.body;
+    // Fetching item allow to skip syncing of whole jellyfin database into jellystats, only fetching when using it
+    await fetchItem(req, res)
 
+    let query = `SELECT im."Name" "FileName",im.*,i.* FROM jf_library_items i left join jf_item_info im on i."Id" = im."Id" where i."Id"=$1`;
+    const jellyfinClient = await getJellyfinClient();
     const { rows: items } = await db.query(query, [Id]);
 
     if (items.length === 0) {
@@ -812,6 +810,9 @@ router.post("/getLibraryHistory", async (req, res) => {
 
 router.post("/getItemHistory", async (req, res) => {
   try {
+    console.log(req.body);
+    console.log(req.body);
+    console.log(req.body);
     const { itemid } = req.body;
 
     const { rows } = await db.query(
@@ -819,7 +820,7 @@ router.post("/getItemHistory", async (req, res) => {
       from jf_playback_activity jf_playback_activity
       where 
       ("EpisodeId"=$1 OR "SeasonId"=$1 OR "NowPlayingItemId"=$1);`,
-      [idemid],
+      [itemid],
     );
 
     const groupedResults = rows.map((item) => ({
@@ -841,8 +842,8 @@ router.post("/getUserHistory", async (req, res) => {
 
     const { rows } = await db.query(
       `select jf_playback_activity.*
-      from jf_playback_activity jf_playback_activity
-      where "UserId"=$1;`,
+       from jf_playback_activity
+       where "UserId" = $1;`,
       [userid],
     );
 
