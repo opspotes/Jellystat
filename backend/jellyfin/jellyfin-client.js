@@ -33,7 +33,7 @@ class JellyfinClient {
       });
       return response.data;
     } catch (error) {
-      console.log(error);
+      this.handleAxiosErrorLogging(error);
       return [];
     }
   }
@@ -65,8 +65,7 @@ class JellyfinClient {
       );
       return adminUser || null;
     } catch (error) {
-      console.log(error);
-      syncTask.loggedData.push({ Message: "Error Getting AdminId: " + error });
+      this.handleAxiosErrorLogging(error);
       return [];
     }
   }
@@ -101,7 +100,7 @@ class JellyfinClient {
 
       return final_response;
     } catch (error) {
-      console.log(error);
+      this.handleAxiosErrorLogging(error);
       return [];
     }
   }
@@ -120,7 +119,7 @@ class JellyfinClient {
         (type) => !["boxsets", "playlists"].includes(type.CollectionType),
       );
     } catch (error) {
-      // console.log(error);
+      this.handleAxiosErrorLogging(error);
       return [];
     }
   }
@@ -164,7 +163,7 @@ class JellyfinClient {
         return final_response;
       }
     } catch (error) {
-      console.log(error);
+      this.handleAxiosErrorLogging(error);
       return [];
     }
   }
@@ -181,12 +180,16 @@ class JellyfinClient {
 
       return response.data.MediaSources;
     } catch (error) {
-      if (error.response) {
-        console.log(error.toJSON());
-      } else {
-        console.log(error)
-      }
+      this.handleAxiosErrorLogging(error);
       return [];
+    }
+  }
+
+  handleAxiosErrorLogging(error) {
+    if (error.response) {
+      console.log(error.toJSON());
+    } else {
+      console.log(error);
     }
   }
 
@@ -196,10 +199,12 @@ class JellyfinClient {
     for (let i = 0; i < filtered_libraries.length; i++) {
       const library = filtered_libraries[i];
       let libraryItems = (await this.getItems("parentId", library.Id, types))
-          // Strange mapping needed, removing it breaks things further down the line
-          .map(item => { item.ParentId = library.Id; return item})
-      data
-          .push(...libraryItems);
+        // Strange mapping needed, removing it breaks things further down the line
+        .map((item) => {
+          item.ParentId = library.Id;
+          return item;
+        });
+      data.push(...libraryItems);
     }
     return data;
   }
