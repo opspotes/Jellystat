@@ -2,6 +2,13 @@
 
 **Jellystat** is a free and open source statistics web application for Jellyfin.
 
+## Differences over initial JellyStat
+
+* Semver
+* Better perf
+* Smaller docker image
+* Could native friendly (works without additional configuration behind a reverse proxy)
+* Some features deemed unnecessary and impacting performances/deployment have been removed. Those were mainly used for administrative purposes
 ## Quickstart Docker
 
 Here is an example Docker Compose file.
