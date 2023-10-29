@@ -47,19 +47,6 @@ class JellyfinClient {
         },
       });
 
-      if (
-        !response ||
-        typeof response.data !== "object" ||
-        !Array.isArray(response.data)
-      ) {
-        res.status(503);
-        res.send({
-          error: "Invalid Response from Users API Call.",
-          user_response: response,
-        });
-        return;
-      }
-
       const adminUser = response.data.filter(
         (user) => user.Policy.IsAdministrator === true,
       );
@@ -185,9 +172,46 @@ class JellyfinClient {
     }
   }
 
+  async getLatestItemsFromUser(userId, libraryId) {
+    try {
+      let url = `${this.hostUrl}/users/${userId}/Items/latest`;
+      if (libraryId) {
+        url += `?parentId=${libraryId}`;
+      }
+
+      const response = await this.axios_instance.get(url, {
+        headers: {
+          "X-MediaBrowser-Token": this.apiKey,
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      this.handleAxiosErrorLogging(error);
+      return [];
+    }
+  }
+
+  async getSessions() {
+    try {
+      let url = `${this.hostUrl}/Sessions`;
+
+      const response = await this.axios_instance.get(url, {
+        headers: {
+          "X-MediaBrowser-Token": this.apiKey,
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      this.handleAxiosErrorLogging(error);
+      return [];
+    }
+  }
+
   handleAxiosErrorLogging(error) {
     if (error.response) {
-      console.log(error.toJSON());
+      console.log(error.stack);
     } else {
       console.log(error);
     }
@@ -219,6 +243,23 @@ class JellyfinClient {
       },
     });
     return pluginResponse.data;
+  }
+
+  async getImage(url) {
+    return this.axios_instance
+      .get(`${this.hostUrl}${url}`, {
+        responseType: "arraybuffer",
+      })
+      .then((response) => {
+        if (response.headers["content-type"].startsWith("image/")) {
+          return response.data;
+        } else {
+          throw new Error("Response is not an image");
+        }
+      })
+      .catch((error) => {
+        this.handleAxiosErrorLogging(error);
+      });
   }
 }
 async function getJellyfinClient() {

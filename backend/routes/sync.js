@@ -34,7 +34,6 @@ const {
 
 const { jf_users_columns, jf_users_mapping } = require("../models/jf_users");
 
-
 /////////////////////////////////////////Functions
 
 async function getExistingIDsforTable(tablename) {
@@ -127,11 +126,12 @@ async function syncLibraryFolders(data) {
 }
 
 async function syncLibraryItems(libraries) {
-  const jellyfinClient = await getJellyfinClient()
-  let data = await jellyfinClient.getItemsOfType(
-      libraries,
-      ["Movie", "Audio", "Series"],
-  );
+  const jellyfinClient = await getJellyfinClient();
+  let data = await jellyfinClient.getItemsOfType(libraries, [
+    "Movie",
+    "Audio",
+    "Series",
+  ]);
   const existingLibraryIds = await getExistingIDsforTable("jf_libraries"); // get existing library Ids from the db
 
   data = data.filter((row) => existingLibraryIds.includes(row.ParentId));
@@ -170,11 +170,11 @@ async function syncLibraryItems(libraries) {
 }
 
 async function syncShowItems(filtered_libraries) {
-  const jellyfinClient = await getJellyfinClient()
-  const data = await jellyfinClient.getItemsOfType(
-      filtered_libraries,
-      ["Season", "Episode"],
-  );
+  const jellyfinClient = await getJellyfinClient();
+  const data = await jellyfinClient.getItemsOfType(filtered_libraries, [
+    "Season",
+    "Episode",
+  ]);
   const { rows: shows } = await db.query(
     `SELECT *
          FROM public.jf_library_items
@@ -308,8 +308,6 @@ async function removeOrphanedData() {
 
   console.log("Orphaned FileInfo/Episode/Season Removed.");
 }
-
-
 
 async function syncPlaybackPluginData() {
   console.time("syncPlaybackPluginData");
@@ -450,8 +448,6 @@ async function fullSync(triggertype) {
   await syncLibraryItems(filtered_libraries);
   console.timeEnd("syncLibraryItems");
 
-
-
   console.time("syncShowItems");
   console.log("syncShowItems");
   await syncShowItems(filtered_libraries);
@@ -530,7 +526,7 @@ async function fetchItem(req, res, shouldRespond) {
           jf_item_info_columns,
         );
         if (result_info.Result === "SUCCESS") {
-          if(shouldRespond) {
+          if (shouldRespond) {
             res.send("Item Synced");
           }
         } else {

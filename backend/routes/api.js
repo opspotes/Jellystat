@@ -712,7 +712,7 @@ router.post("/getItemDetails", async (req, res) => {
   try {
     const { itemId: Id } = req.body;
     // Fetching item allow to skip syncing of whole jellyfin database into jellystats, only fetching when using it
-    await fetchItem(req, res)
+    await fetchItem(req, res);
 
     let query = `SELECT im."Name" "FileName",im.*,i.* FROM jf_library_items i left join jf_item_info im on i."Id" = im."Id" where i."Id"=$1`;
     const jellyfinClient = await getJellyfinClient();
