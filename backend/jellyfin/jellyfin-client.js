@@ -181,7 +181,11 @@ class JellyfinClient {
 
       return response.data.MediaSources;
     } catch (error) {
-      console.log(error);
+      if (error.response) {
+        console.log(error.toJSON());
+      } else {
+        console.log(error)
+      }
       return [];
     }
   }
