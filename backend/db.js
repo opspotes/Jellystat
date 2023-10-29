@@ -28,6 +28,7 @@ async function initDatabase() {
     user: _POSTGRES_USER,
     password: _POSTGRES_PASSWORD,
     port: _POSTGRES_PORT,
+    database: _POSTGRES_DATABASE
   });
   await client.connect();
   try {

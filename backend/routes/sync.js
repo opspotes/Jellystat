@@ -508,10 +508,10 @@ async function fetchItem(req, res, shouldRespond) {
 
     let item_info = await jellyfinClient.getItemPlaybackInfo(itemId, userid);
 
-    let itemToInsert = await libraryItemWithParent.map(
+    let itemToInsert = libraryItemWithParent.map(
       jf_library_items_mapping,
     );
-    let itemInfoToInsert = await item_info.map(jf_item_info_mapping);
+    let itemInfoToInsert = item_info.map(jf_item_info_mapping);
 
     if (itemToInsert.length !== 0) {
       let result = await db.insertBulk(
