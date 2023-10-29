@@ -3,11 +3,11 @@ FROM node:slim AS builder-front
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN npm cache clean --force
 RUN npm install
-COPY ./src ./src
-COPY ./public ./public
+COPY ./frontend/src ./src
+COPY ./frontend/public ./public
 RUN npm run build
 
 FROM node:slim AS builder-server
