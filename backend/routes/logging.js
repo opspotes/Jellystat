@@ -35,7 +35,7 @@ async function insertLog(uuid, triggertype, taskType) {
     };
 
     let result = await db.insertBulk("jf_logging", log, jf_logging_columns);
-    // console.log(result);
+    console.log(result);
   } catch (error) {
     console.log(error);
     return [];

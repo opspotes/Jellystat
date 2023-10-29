@@ -466,8 +466,6 @@ async function fullSync(triggertype) {
   let endTime = moment();
 
   let diffInSeconds = endTime.diff(startTime, 'seconds');
-  await sleep(5000);
-  await syncPlaybackPluginData();
 
   const log=
     {
@@ -481,7 +479,7 @@ async function fullSync(triggertype) {
       "Result":"Success"
 
     };
-  await insertLog(log);
+  await insertLog(log, "Automatic", "Jellyfin Sync");
   console.log("Finished fullsync");
 }
 
