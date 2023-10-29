@@ -38,6 +38,21 @@ class JellyfinClient {
     }
   }
 
+  async countItems() {
+    try {
+      const url = `${this.hostUrl}/items/count`;
+      const response = await this.axios_instance.get(url, {
+        headers: {
+          "X-MediaBrowser-Token": this.apiKey,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      this.handleAxiosErrorLogging(error);
+      return 0;
+    }
+  }
+
   async getAdminUser() {
     try {
       const url = `${this.hostUrl}/Users`;
@@ -192,6 +207,25 @@ class JellyfinClient {
     }
   }
 
+  async getItemsFromUser(userId, parentId) {
+    try {
+      let url = `${this.hostUrl}/users/${userId}/Items`;
+      if (libraryId) {
+        url += `?ParentID=${parentId}`;
+      }
+      const response = await this.axios_instance.get(url, {
+        headers: {
+          "X-MediaBrowser-Token": this.apiKey,
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      this.handleAxiosErrorLogging(error);
+      return [];
+    }
+  }
+
   async getSessions() {
     try {
       let url = `${this.hostUrl}/Sessions`;
@@ -265,6 +299,46 @@ class JellyfinClient {
       .catch((error) => {
         this.handleAxiosErrorLogging(error);
       });
+  }
+
+  async getSeasonsForShow(showId) {
+      try {
+        let url = `${this.hostUrl}/shows/${showId}/Seasons`;
+
+        const response = await this.axios_instance.get(url, {
+          params: {
+            recursive: true
+          },
+          headers: {
+            "X-MediaBrowser-Token": this.apiKey,
+          },
+        });
+
+        return response.data;
+      } catch (error) {
+        this.handleAxiosErrorLogging(error);
+        return [];
+      }
+  }
+
+  async getEpisodesForShow(showId) {
+    try {
+      let url = `${this.hostUrl}/shows/${showId}/Episodes`;
+
+      const response = await this.axios_instance.get(url, {
+        params: {
+          recursive: true
+        },
+        headers: {
+          "X-MediaBrowser-Token": this.apiKey,
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      this.handleAxiosErrorLogging(error);
+      return [];
+    }
   }
 }
 async function getJellyfinClient() {

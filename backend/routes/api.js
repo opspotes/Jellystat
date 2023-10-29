@@ -144,24 +144,12 @@ router.post("/updatePassword", async (req, res) => {
 });
 
 router.get("/TrackedLibraries", async (req, res) => {
-  const { rows: config } = await db.query(
-    'SELECT * FROM app_config where "ID"=1',
-  );
+  const jellyfinClient = await getJellyfinClient()
 
-  if (config[0].JF_HOST === null || config[0].JF_API_KEY === null) {
-    res.send({ error: "Config Details Not Found" });
-    return;
-  }
-
-  let url = `${config[0].JF_HOST}/Library/MediaFolders`;
   try {
-    const response_data = await axios_instance.get(url, {
-      headers: {
-        "X-MediaBrowser-Token": config[0].JF_API_KEY,
-      },
-    });
-
-    const filtered_items = response_data.data.Items.filter(
+    const filtered_items = (
+      await jellyfinClient.getLibrariesFromApi()
+    ).Items.filter(
       (type) => !["boxsets", "playlists"].includes(type.CollectionType),
     );
 
@@ -426,14 +414,12 @@ router.get("/dataValidator", async (req, res) => {
 
     /////////////////////////Get Admin
 
-    const adminurl = `${config[0].JF_HOST}/Users`;
-    const response = await axios_instance.get(adminurl, {
-      headers: {
-        "X-MediaBrowser-Token": config[0].JF_API_KEY,
-      },
-    });
+    const jellyfinClient = await getJellyfinClient()
 
-    const admins = await response.data.filter(
+
+    const response = await jellyfinClient.getUsers();
+
+    const admins = await response.filter(
       (user) => user.Policy.IsAdministrator === true,
     );
 
@@ -463,25 +449,12 @@ router.get("/dataValidator", async (req, res) => {
       .query('SELECT "EpisodeId" FROM jf_library_episodes')
       .then((res) => res.rows.map((row) => row.EpisodeId));
 
-    let count_url = `${config[0].JF_HOST}/items/counts`;
 
-    const response_api_count = await axios_instance.get(count_url, {
-      headers: {
-        "X-MediaBrowser-Token": config[0].JF_API_KEY,
-      },
-    });
-
-    payload.count_from_api = response_api_count.data;
+    payload.count_from_api = await jellyfinClient.countItems();
     //get libraries
-    let url = `${config[0].JF_HOST}/Users/${userid}/Items`;
+    const response_data = await jellyfinClient.getItemsFromUser(userid);
 
-    const response_data = await axios_instance.get(url, {
-      headers: {
-        "X-MediaBrowser-Token": config[0].JF_API_KEY,
-      },
-    });
-
-    let libraries = response_data.data.Items;
+    let libraries = response_data.Items;
     payload.raw_library_data = response_data.data;
 
     //get items
@@ -547,32 +520,19 @@ router.get("/dataValidator", async (req, res) => {
     //loop for each show
 
     for (const show of shows) {
-      let season_url = `${config[0].JF_HOST}/shows/${show.Id}/Seasons`;
-      let episodes_url = `${config[0].JF_HOST}/shows/${show.Id}/Episodes`;
+      const response_data_seasons = await jellyfinClient.getSeasonsForShow(
+        show.Id,
+      );
 
-      const response_data_seasons = await axios_instance.get(season_url, {
-        headers: {
-          "X-MediaBrowser-Token": config[0].JF_API_KEY,
-        },
-        params: {
-          recursive: true,
-        },
-      });
+      const response_data_episodes = await jellyfinClient.getEpisodesForShow(
+        show.Id,
+      );
 
-      const response_data_episodes = await axios_instance.get(episodes_url, {
-        headers: {
-          "X-MediaBrowser-Token": config[0].JF_API_KEY,
-        },
-        params: {
-          recursive: true,
-        },
-      });
+      allSeasons.push(...response_data_seasons.Items);
+      allEpisodes.push(...response_data_episodes.Items);
 
-      allSeasons.push(...response_data_seasons.data.Items);
-      allEpisodes.push(...response_data_episodes.data.Items);
-
-      raw_allSeasons.push(response_data_seasons.data);
-      raw_allEpisodes.push(response_data_episodes.data);
+      raw_allSeasons.push(response_data_seasons);
+      raw_allEpisodes.push(response_data_episodes);
     }
 
     payload.existing_season_count = db_seasons.length;

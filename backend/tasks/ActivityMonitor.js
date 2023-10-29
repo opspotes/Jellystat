@@ -13,6 +13,7 @@ const {
 } = require("../models/jf_activity_watchdog");
 const { randomUUID } = require("crypto");
 const https = require("https");
+const getJellyfinClient = require("../jellyfin/jellyfin-client");
 
 const agent = new https.Agent({
   rejectUnauthorized:
@@ -29,27 +30,10 @@ async function ActivityMonitor(interval) {
 
   setInterval(async () => {
     try {
-      const { rows: config } = await db.query(
-        'SELECT * FROM app_config where "ID"=1',
-      );
+      const jellyfinClient = await getJellyfinClient()
 
-      if (!config || config.length === 0) {
-        return;
-      }
-      const base_url = config[0].JF_HOST;
-      const apiKey = config[0].JF_API_KEY;
-
-      if (base_url === null || config[0].JF_API_KEY === null) {
-        return;
-      }
-
-      const url = `${base_url}/Sessions`;
-      const response = await axios_instance.get(url, {
-        headers: {
-          "X-MediaBrowser-Token": apiKey,
-        },
-      });
-      const SessionData = response.data.filter(
+      const response = await jellyfinClient.getSessions();
+      const SessionData = response.filter(
         (row) => row.NowPlayingItem !== undefined,
       );
 
