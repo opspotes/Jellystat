@@ -60,14 +60,6 @@ async function SyncTask() {
         'SELECT * FROM app_config where "ID"=1',
       );
 
-      if (
-        config.length === 0 ||
-        config[0].JF_HOST === null ||
-        config[0].JF_API_KEY === null
-      ) {
-        return;
-      }
-
       const last_execution = await db
         .query(
           `SELECT "TimeRun","Result"

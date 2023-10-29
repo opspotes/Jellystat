@@ -2,6 +2,7 @@ const express = require("express");
 const pgp = require("pg-promise")();
 const db = require("../db");
 const moment = require("moment");
+const { randomUUID } = require("crypto");
 
 const getJellyfinClient = require("../jellyfin/jellyfin-client");
 
@@ -33,6 +34,8 @@ const {
 } = require("../models/jf_playback_reporting_plugin_data");
 
 const { jf_users_columns, jf_users_mapping } = require("../models/jf_users");
+const taskName = require("../logging/taskName");
+const { insertLog } = require("./logging");
 
 /////////////////////////////////////////Functions
 
@@ -311,18 +314,12 @@ async function removeOrphanedData() {
 
 async function syncPlaybackPluginData() {
   console.time("syncPlaybackPluginData");
-  await getJellyfinClient();
+  const jellyfinClient = await getJellyfinClient();
 
   //Playback Reporting Plugin Check
-  const pluginURL = `${base_url}/plugins`;
+  const pluginResponse = await jellyfinClient.getPlugins();
 
-  const pluginResponse = await axios_instance.get(pluginURL, {
-    headers: {
-      "X-MediaBrowser-Token": apiKey,
-    },
-  });
-
-  const hasPlaybackReportingPlugin = pluginResponse.data?.filter(
+  const hasPlaybackReportingPlugin = pluginResponse?.filter(
     (plugins) =>
       plugins?.ConfigurationFileName ===
       "Jellyfin.Plugin.PlaybackReporting.xml",
@@ -417,6 +414,7 @@ async function updateLibraryStatsData() {
 
 async function fullSync(triggertype) {
   console.log(`Starting fullsync [${triggertype}]`);
+  let startTime = moment();
 
   const jellyfinClient = await getJellyfinClient();
   console.log("Starting fetching libraries");
@@ -464,6 +462,26 @@ async function fullSync(triggertype) {
   await updateLibraryStatsData();
   console.timeEnd("updateLibraryStatsData");
 
+
+  let endTime = moment();
+
+  let diffInSeconds = endTime.diff(startTime, 'seconds');
+  await sleep(5000);
+  await syncPlaybackPluginData();
+
+  const log=
+    {
+      "Id":randomUUID(),
+      "Name":"Jellyfin Sync",
+      "Type":"Task",
+      "ExecutionType":"Manual",
+      "Duration":diffInSeconds,
+      "TimeRun":startTime,
+      "Log":"",
+      "Result":"Success"
+
+    };
+  await insertLog(log);
   console.log("Finished fullsync");
 }
 
