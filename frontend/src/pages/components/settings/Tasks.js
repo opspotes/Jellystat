@@ -18,6 +18,12 @@ export default function Tasks() {
   const [processing, setProcessing] = useState(false);
   const [taskIntervals, setTaskIntervals] = useState([]);
   const token = localStorage.getItem("token");
+  const intervals = [
+    { value: 15, display: "15 Minutes" },
+    { value: 30, display: "30 Minutes" },
+    { value: 60, display: "1 Hour" },
+    { value: 1440, display: "1 Day" },
+  ];
 
   async function executeTask(url) {
     setProcessing(true);
@@ -52,6 +58,9 @@ export default function Tasks() {
           },
         },
       )
+      .then((response) => {
+        setTaskIntervals(response.data)
+      })
       .catch((error) => {
         console.log(error);
       });
@@ -67,7 +76,6 @@ export default function Tasks() {
       })
       .then((response) => {
         setTaskIntervals(response.data);
-        getTaskSettings();
       })
       .catch((error) => {
         console.log(error);
@@ -78,12 +86,6 @@ export default function Tasks() {
     getTaskSettings();
   }
 
-  const intervals = [
-    { value: 15, display: "15 Minutes" },
-    { value: 30, display: "30 Minutes" },
-    { value: 60, display: "1 Hour" },
-    { value: 1440, display: "1 Day" },
-  ];
 
   return (
     <div className="tasks">
