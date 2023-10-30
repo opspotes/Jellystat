@@ -244,9 +244,9 @@ class JellyfinClient {
   }
 
   handleAxiosErrorLogging(error) {
-    if (error.response) {
+    if (error.request) {
       // No need to log statcktrace for 404
-      if(error.response.status === 404) {
+      if(error.response?.status === 404) {
         console.log(`Jellyfin returned 404 for [${error.request.path}]`)
       } else {
         console.error(`Error while requesting Jellyfin for path [${error.request.path}] ${error.stack}`);
