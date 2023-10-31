@@ -31,11 +31,10 @@ async function insertLog(uuid, triggertype, taskType) {
       Duration: 0,
       TimeRun: startTime,
       Log: JSON.stringify([{}]),
-      Result: taskstate.RUNNING,
+      Result: taskstate.SUCCESS,
     };
 
     let result = await db.insertBulk("jf_logging", log, jf_logging_columns);
-    console.log(result);
   } catch (error) {
     console.log(error);
     return [];

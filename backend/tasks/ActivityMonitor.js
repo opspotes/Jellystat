@@ -1,6 +1,5 @@
 const db = require("../db");
 const pgp = require("pg-promise")();
-const axios = require("axios");
 
 const moment = require("moment");
 const {
@@ -12,18 +11,8 @@ const {
   jf_activity_watchdog_mapping,
 } = require("../models/jf_activity_watchdog");
 const { randomUUID } = require("crypto");
-const https = require("https");
 const getJellyfinClient = require("../jellyfin/jellyfin-client");
 
-const agent = new https.Agent({
-  rejectUnauthorized:
-    (process.env.REJECT_SELF_SIGNED_CERTIFICATES || "true").toLowerCase() ===
-    "true",
-});
-
-const axios_instance = axios.create({
-  httpsAgent: agent,
-});
 
 async function ActivityMonitor(interval) {
   console.log("Activity Interval: " + interval);

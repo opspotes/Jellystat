@@ -463,23 +463,7 @@ async function fullSync(triggertype) {
   console.timeEnd("updateLibraryStatsData");
 
 
-  let endTime = moment();
-
-  let diffInSeconds = endTime.diff(startTime, 'seconds');
-
-  const log=
-    {
-      "Id":randomUUID(),
-      "Name":"Jellyfin Sync",
-      "Type":"Task",
-      "ExecutionType":"Manual",
-      "Duration":diffInSeconds,
-      "TimeRun":startTime,
-      "Log":"",
-      "Result":"Success"
-
-    };
-  await insertLog(log, "Automatic", "Jellyfin Sync");
+  await insertLog(randomUUID(), "Automatic", "Jellyfin Sync");
   console.log("Finished fullsync");
 }
 
