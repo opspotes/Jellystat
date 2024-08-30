@@ -21,7 +21,6 @@ import StreamInfo from "./stream_info";
 
 import "../../css/activity/activity-table.css";
 
-// localStorage.setItem('hour12',true);
 
 function formatTotalWatchTime(seconds) {
   const hours = Math.floor(seconds / 3600);
@@ -134,12 +133,10 @@ function Row(data) {
           <span onClick={() => openModal(row)}>{row.Client}</span>
         </TableCell>
         <TableCell>
-          {Intl.DateTimeFormat("en-UK", options).format(
-            new Date(row.ActivityDateInserted),
-          )}
+          {row.ActivityDateInserted}
         </TableCell>
         <TableCell>
-          {formatTotalWatchTime(row.PlaybackDuration) || "0 seconds"}
+          {formatTotalWatchTime(row.TotalPlaybackDuration) || "0 seconds"}
         </TableCell>
         <TableCell>
           {row.results.length !== 0 ? row.results.length : 1}
@@ -302,23 +299,17 @@ function EnhancedTableHead(props) {
 }
 
 export default function ActivityTable(props) {
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
   const [order, setOrder] = React.useState("desc");
   const [orderBy, setOrderBy] = React.useState("ActivityDateInserted");
 
-  if (rowsPerPage !== props.itemCount) {
-    setRowsPerPage(props.itemCount);
-    setPage(0);
-  }
 
   const handleNextPageClick = () => {
-    setPage((prevPage) => prevPage + 1);
+    props.setPage(() => props.page + 1);
   };
 
   const handlePreviousPageClick = () => {
-    setPage((prevPage) => prevPage - 1);
+    props.setPage(() => props.page - 1);
   };
 
   function descendingComparator(a, b, orderBy) {
@@ -352,14 +343,6 @@ export default function ActivityTable(props) {
     return stabilizedThis.map((el) => el[0]);
   }
 
-  const visibleRows = React.useMemo(
-    () =>
-      stableSort(props.data, getComparator(order, orderBy)).slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage,
-      ),
-    [order, orderBy, page, rowsPerPage, getComparator, props.data],
-  );
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === "asc";
@@ -375,10 +358,10 @@ export default function ActivityTable(props) {
             order={order}
             orderBy={orderBy}
             onRequestSort={handleRequestSort}
-            rowCount={rowsPerPage}
+            rowCount={props.itemPerPage}
           />
           <TableBody>
-            {visibleRows.map((row) => (
+            {props.data.map((row) => (
               <Row
                 key={row.Id + row.NowPlayingItemId + row.EpisodeId}
                 row={row}
@@ -409,8 +392,8 @@ export default function ActivityTable(props) {
         <ButtonGroup className="pagination-buttons">
           <Button
             className="page-btn"
-            onClick={() => setPage(0)}
-            disabled={page === 0}
+            onClick={() => props.setPage(0)}
+            disabled={props.page === 0}
           >
             First
           </Button>
@@ -418,35 +401,24 @@ export default function ActivityTable(props) {
           <Button
             className="page-btn"
             onClick={handlePreviousPageClick}
-            disabled={page === 0}
+            disabled={props.page === 0}
           >
             Previous
           </Button>
 
           <div className="page-number d-flex align-items-center justify-content-center">{`${
-            page * rowsPerPage + 1
-          }-${Math.min(
-            page * rowsPerPage + 1 + (rowsPerPage - 1),
-            props.data.length,
-          )} of ${props.data.length}`}</div>
+            (props.page) * props.itemPerPage + 1
+          }-${
+            props.page * props.itemPerPage + 1 + (props.itemPerPage - 1)
+          }`}</div>
 
           <Button
             className="page-btn"
             onClick={handleNextPageClick}
-            disabled={page >= Math.ceil(props.data.length / rowsPerPage) - 1}
           >
             Next
           </Button>
 
-          <Button
-            className="page-btn"
-            onClick={() =>
-              setPage(Math.ceil(props.data.length / rowsPerPage) - 1)
-            }
-            disabled={page >= Math.ceil(props.data.length / rowsPerPage) - 1}
-          >
-            Last
-          </Button>
         </ButtonGroup>
       </div>
     </>

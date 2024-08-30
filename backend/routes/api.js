@@ -707,10 +707,20 @@ router.post("/getItemDetails", async (req, res) => {
 //DB Queries - History
 router.get("/getHistory", async (req, res) => {
   try {
+    // Extract page and limit from query parameters
+    const page = parseInt(req.query.page) || 0; // default to page 1 if not provided
+    const limit = parseInt(req.query.limit) || 10; // default to 10 items per page if not provided
+    const offset = (page) * limit;
+
+    // Fetch rows with pagination
     const { rows } = await db.query(
-      `SELECT * FROM jf_playback_activity order by "ActivityDateInserted" desc`,
+      `SELECT * FROM jf_playback_activity 
+       ORDER BY "ActivityDateInserted" DESC 
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
     );
 
+    // Group results as per the existing logic
     const groupedResults = {};
     rows.forEach((row) => {
       if (groupedResults[row.NowPlayingItemId + row.EpisodeId]) {
@@ -734,11 +744,20 @@ router.get("/getHistory", async (req, res) => {
       }
     });
 
-    res.send(Object.values(groupedResults));
+    // Return paginated results
+    res.send({
+      page,
+      limit,
+      totalItems: rows.length, // Total number of items in the current page
+      totalGroups: Object.keys(groupedResults).length, // Total number of grouped results in the current page
+      data: Object.values(groupedResults),
+    });
   } catch (error) {
     console.log(error);
+    res.status(500).send("Server error");
   }
 });
+
 
 router.post("/getLibraryHistory", async (req, res) => {
   try {

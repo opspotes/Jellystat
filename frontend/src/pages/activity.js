@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-
 import axios from "axios";
 
 import "./css/activity.css";
@@ -9,10 +8,11 @@ import ActivityTable from "./components/activity/activity-table";
 import Loading from "./components/general/loading";
 
 function Activity() {
-  const [data, setData] = useState();
+  const [data, setData] = useState([]);
   const [config, setConfig] = useState(null);
 
-  const [itemCount, setItemCount] = useState(10);
+  const [itemCount, setItemCount] = useState(10); // Nombre d'éléments par page
+  const [page, setPage] = useState(0); // Page actuelle
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -34,42 +34,30 @@ function Activity() {
             Authorization: `Bearer ${config.token}`,
             "Content-Type": "application/json",
           },
+          params: {
+            page,
+            limit: itemCount,
+          },
         })
-        .then((data) => {
-          setData(data.data);
+        .then((response) => {
+          setData(response.data.data);
         })
         .catch((error) => {
           console.log(error);
         });
     };
 
-    if (!data && config) {
+    if (config) {
       fetchLibraries();
-    }
-
-    if (!config) {
+    } else {
       fetchConfig();
     }
 
-    const intervalId = setInterval(fetchLibraries, 60000 * 60);
-    return () => clearInterval(intervalId);
-  }, [data, config]);
+    return () => {};
+  }, [config, page, itemCount]);
 
-  if (!data) {
+  if (!data.length) {
     return <Loading />;
-  }
-
-  if (data.length === 0) {
-    return (
-      <div>
-        <div className="Heading">
-          <h1>Activity</h1>
-        </div>
-        <div className="Activity">
-          <h1>No Activity to display</h1>
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -82,6 +70,7 @@ function Activity() {
             value={itemCount}
             onChange={(event) => {
               setItemCount(event.target.value);
+              setPage(0); // Revenir à la première page lors du changement de nombre d'éléments
             }}
           >
             <option value="10">10</option>
@@ -92,7 +81,12 @@ function Activity() {
         </div>
       </div>
       <div className="Activity">
-        <ActivityTable data={data} itemCount={itemCount} />
+        <ActivityTable
+          data={data}
+          itemPerPage={itemCount}
+          page={page}
+          setPage={setPage}
+        />
       </div>
     </div>
   );
